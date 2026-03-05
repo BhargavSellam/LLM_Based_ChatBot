@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ChatBot | Built by Bhargav</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        /* ==========================================
+           1. CORE LAYOUT & THEME VARIABLES
+           ========================================== */
+        :root {
+            --bg-body: #f8fafd;
+            --bg-card: #ffffff;
+            --text-main: #1a1c1e;
+            --text-muted: #666;
+            --border: #eef2f6;
+            --bot-bubble: #ffffff;
+            --bot-text: #333;
+            --input-bg: #fcfdfe;
+        }
+
+        body.dark-mode {
+            --bg-body: #0b0e11;
+            --bg-card: #181a20;
+            --text-main: #eaecef;
+            --text-muted: #848e9c;
+            --border: #2b2f36;
+            --bot-bubble: #1e2329;
+            --bot-text: #eaecef;
+            --input-bg: #1e2329;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: background 0.3s ease, color 0.3s ease; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-main);
+        }
+
+        /* --- Header --- */
+        header {
+            background: var(--bg-card);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .logo-section { display: flex; align-items: center; gap: 12px; }
+        .logo-box {
+            background: #2b7fff;
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 20px;
+        }
+        .logo-text { font-weight: 600; font-size: 20px; color: var(--text-main); }
+        
+        /* --- Toggle Styling --- */
+        .theme-switch {
+            background: var(--bg-body);
+            padding: 4px;
+            border-radius: 20px;
+            display: flex;
+            gap: 4px;
+            border: 1px solid var(--border);
+        }
+        .theme-btn { 
+            padding: 6px 10px; 
+            border-radius: 15px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            color: var(--text-muted);
+            border: none;
+            background: transparent;
+        }
+        .theme-btn.active { background: #2b7fff; color: white; }
+
+        .highlight-name {
+            font-weight: 700;
+            color: #2b7fff;
+            background: rgba(43, 127, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* ==========================================
+           2. CHAT WINDOW & ALIGNMENT
+           ========================================== */
+        #chat-window {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .message-row { display: flex; width: 100%; align-items: flex-start; gap: 12px; }
+        .user-row { justify-content: flex-start; flex-direction: row; }
+        .bot-row { justify-content: flex-end; flex-direction: row-reverse; }
+
+        .avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 18px;
+        }
+        .bot-avatar { background: #2b7fff; color: white; }
+        .user-avatar { background: #cfd8dc; color: #546e7a; }
+
+        .bubble {
+            max-width: 70%;
+            padding: 14px 20px;
+            border-radius: 16px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        .user-bubble { background: #2b7fff; color: white; border-top-left-radius: 2px; }
+        .bot-bubble {
+            background: var(--bot-bubble);
+            border: 1px solid var(--border);
+            color: var(--bot-text);
+            border-top-right-radius: 2px;
+        }
+
+        .timestamp { font-size: 11px; margin-top: 8px; opacity: 0.7; }
+        .user-row .timestamp { color: rgba(255,255,255,0.8); }
+        .bot-row .timestamp { color: var(--text-muted); text-align: right; }
+
+        /* ==========================================
+           3. MARKDOWN & ANIMATION
+           ========================================== */
+        .markdown-content p { margin-bottom: 12px; }
+        .markdown-content pre { 
+            background: #1e1e1e; color: #dcdcdc; padding: 16px; 
+            border-radius: 8px; overflow-x: auto; margin: 12px 0; font-family: 'Consolas', monospace;
+        }
+        .markdown-content code { background: rgba(0,0,0,0.06); padding: 2px 5px; border-radius: 4px; }
+        
+        .thinking-text { font-style: italic; color: var(--text-muted); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% {opacity: 0.4;} 50% {opacity: 1;} 100% {opacity: 0.4;} }
+
+        /* ==========================================
+           4. FOOTER
+           ========================================== */
+        footer {
+            background: var(--bg-card);
+            padding: 20px 40px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-size: 15px;
+        }
+        .send-btn {
+            background: #2b7fff;
+            color: white;
+            border: none;
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-section">
+        <div class="logo-box"><i class="fa-regular fa-comment-dots"></i></div>
+        <div class="logo-text">AI ChatBot</div>
+    </div>
+    
+    <div class="theme-switch">
+        <button id="sun-btn" class="theme-btn active" onclick="toggleTheme('light')" title="Light Mode">
+            <i class="fa-solid fa-sun"></i>
+        </button>
+        <button id="moon-btn" class="theme-btn" onclick="toggleTheme('dark')" title="Dark Mode">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </div>
+</header>
+
+<main id="chat-window">
+    <div class="message-row bot-row">
+        <div class="avatar bot-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div class="bubble bot-bubble">
+            <div class="markdown-content">
+                Hello! I'm your AI companion, developed by <span class="highlight-name">Bhargav S</span>. How can I assist you today?
+            </div>
+            <div class="timestamp">Just now</div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+    <button class="send-btn" id="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+</footer>
+
+<script>
+    // --- THEME LOGIC ---
+    function toggleTheme(mode) {
+        const body = document.body;
+        const sunBtn = document.getElementById('sun-btn');
+        const moonBtn = document.getElementById('moon-btn');
+
+        if (mode === 'dark') {
+            body.classList.add('dark-mode');
+            moonBtn.classList.add('active');
+            sunBtn.classList.remove('active');
+        } else {
+            body.classList.remove('dark-mode');
+            sunBtn.classList.add('active');
+            moonBtn.classList.remove('active');
+        }
+    }
+
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+
+    function getTime() {
+        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        addMessageToUI('user', text);
+        userInput.value = '';
+
+        const thinkingRow = document.createElement('div');
+        thinkingRow.className = 'message-row bot-row';
+        thinkingRow.innerHTML = `
+            <div class="avatar bot-avatar"><i class="fa-solid fa-robot"></i></div>
+            <div class="bubble bot-bubble">
+                <div class="thinking-text">Thinking...</div>
+            </div>
+        `;
+        chatWindow.appendChild(thinkingRow);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        try {
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await response.json();
+            chatWindow.removeChild(thinkingRow);
+            addMessageToUI('bot', data.response);
+        } catch (err) {
+            if(thinkingRow.parentNode) chatWindow.removeChild(thinkingRow);
+            addMessageToUI('bot', "⚠️ Error: Connection to server failed.");
+        }
+    }
+
+    function addMessageToUI(sender, text) {
+        const row = document.createElement('div');
+        row.className = `message-row ${sender}-row`;
+        const isBot = sender === 'bot';
+        const content = isBot ? marked.parse(text) : text;
+        
+        row.innerHTML = `
+            <div class="avatar ${isBot ? 'bot-avatar' : 'user-avatar'}"><i class="fa-solid ${isBot ? 'fa-robot' : 'fa-user'}"></i></div>
+            <div class="bubble ${sender}-bubble">
+                <div class="markdown-content">${content}</div>
+                <div class="timestamp">${getTime()}</div>
+            </div>
+        `;
+        chatWindow.appendChild(row);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    userInput.addEventListener("keypress", (e) => {
+        if(e.key === "Enter") sendMessage();
+    });
+</script>
+
+</body>
+</html>
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ChatBot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafd;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eef2f6;
+        }
+        .logo-section { display: flex; align-items: center; gap: 12px; }
+        .logo-box {
+            background: #2b7fff;
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 20px;
+        }
+        .logo-text { font-weight: 600; font-size: 20px; color: #1a1c1e; }
+        .theme-switch {
+            background: #f1f4f9;
+            padding: 4px;
+            border-radius: 20px;
+            display: flex;
+            gap: 4px;
+        }
+        .theme-btn { padding: 6px 10px; border-radius: 15px; cursor: pointer; font-size: 14px; }
+        .theme-btn.active { background: #2b7fff; color: white; }
+
+        /* Chat Container */
+        #chat-window {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .message-row { display: flex; width: 100%; align-items: flex-start; gap: 12px; }
+        .bot-row { justify-content: flex-start; }
+        .user-row { justify-content: flex-end; flex-direction: row-reverse; }
+
+        /* Avatars */
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .bot-avatar { background: #2b7fff; color: white; }
+        .user-avatar { background: #cfd8dc; color: #546e7a; }
+
+        /* Bubbles */
+        .bubble {
+            max-width: 60%;
+            padding: 14px 20px;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+        .bot-bubble {
+            background: white;
+            border: 1px solid #eef2f6;
+            color: #333;
+        }
+        .user-bubble {
+            background: #2b7fff;
+            color: white;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            margin-top: 6px;
+            opacity: 0.7;
+        }
+        .bot-row .timestamp { color: #999; }
+        .user-row .timestamp { color: #fff; text-align: right; }
+
+        /* Input Area */
+        footer {
+            background: white;
+            padding: 20px 40px;
+            border-top: 1px solid #eef2f6;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid #e1e8ed;
+            border-radius: 10px;
+            outline: none;
+            background: #fcfdfe;
+            font-size: 15px;
+        }
+        .send-btn {
+            background: #90caf9;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .send-btn:hover { background: #2b7fff; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-section">
+        <div class="logo-box"><i class="fa-regular fa-comment-dots"></i></div>
+        <div class="logo-text">AI ChatBot</div>
+    </div>
+    <div class="theme-switch">
+        <div class="theme-btn active"><i class="fa-solid fa-sun"></i></div>
+        <div class="theme-btn"><i class="fa-solid fa-moon"></i></div>
+    </div>
+</header>
+
+<main id="chat-window">
+    <div class="message-row bot-row">
+        <div class="avatar bot-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div class="bubble bot-bubble">
+            Hello! I'm your AI assistant. How can I help you today?
+            <div class="timestamp">12:12 PM</div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+    <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+</footer>
+
+<script>
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+
+    function getTime() {
+        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // 1. Add User Message to UI
+        addMessageToUI('user', text);
+        userInput.value = '';
+
+        // 2. Fetch from Flask Backend
+        try {
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await response.json();
+            
+            // 3. Add Bot Response to UI
+            addMessageToUI('bot', data.response);
+        } catch (err) {
+            console.error("Error:", err);
+        }
+    }
+
+    function addMessageToUI(sender, text) {
+        const row = document.createElement('div');
+        row.className = `message-row ${sender}-row`;
+        
+        const avatarClass = sender === 'bot' ? 'fa-robot' : 'fa-user';
+        const avatarType = sender === 'bot' ? 'bot-avatar' : 'user-avatar';
+        
+        row.innerHTML = `
+            <div class="avatar ${avatarType}"><i class="fa-solid ${avatarClass}"></i></div>
+            <div class="bubble ${sender}-bubble">
+                ${text}
+                <div class="timestamp">${getTime()}</div>
+            </div>
+        `;
+        
+        chatWindow.appendChild(row);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    userInput.addEventListener("keypress", (e) => { if(e.key === "Enter") sendMessage(); });
+</script>
+
+</body>
+</html> -->
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ChatBot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafd;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eef2f6;
+        }
+        .logo-section { display: flex; align-items: center; gap: 12px; }
+        .logo-box {
+            background: #2b7fff;
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 20px;
+        }
+        .logo-text { font-weight: 600; font-size: 20px; color: #1a1c1e; }
+        .theme-switch {
+            background: #f1f4f9;
+            padding: 4px;
+            border-radius: 20px;
+            display: flex;
+            gap: 4px;
+        }
+        .theme-btn { padding: 6px 10px; border-radius: 15px; cursor: pointer; font-size: 14px; }
+        .theme-btn.active { background: #2b7fff; color: white; }
+
+        /* Chat Container */
+        #chat-window {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .message-row { display: flex; width: 100%; align-items: flex-start; gap: 12px; }
+        .bot-row { justify-content: flex-start; }
+        .user-row { justify-content: flex-end; flex-direction: row-reverse; }
+
+        /* Avatars */
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .bot-avatar { background: #2b7fff; color: white; }
+        .user-avatar { background: #cfd8dc; color: #546e7a; }
+
+        /* Bubbles */
+        .bubble {
+            max-width: 60%;
+            padding: 14px 20px;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+        .bot-bubble {
+            background: white;
+            border: 1px solid #eef2f6;
+            color: #333;
+        }
+        .user-bubble {
+            background: #2b7fff;
+            color: white;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            margin-top: 6px;
+            opacity: 0.7;
+        }
+        .bot-row .timestamp { color: #999; }
+        .user-row .timestamp { color: #fff; text-align: right; }
+
+        /* Input Area */
+        footer {
+            background: white;
+            padding: 20px 40px;
+            border-top: 1px solid #eef2f6;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid #e1e8ed;
+            border-radius: 10px;
+            outline: none;
+            background: #fcfdfe;
+            font-size: 15px;
+        }
+        .send-btn {
+            background: #90caf9;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .send-btn:hover { background: #2b7fff; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-section">
+        <div class="logo-box"><i class="fa-regular fa-comment-dots"></i></div>
+        <div class="logo-text">AI ChatBot</div>
+    </div>
+    <div class="theme-switch">
+        <div class="theme-btn active"><i class="fa-solid fa-sun"></i></div>
+        <div class="theme-btn"><i class="fa-solid fa-moon"></i></div>
+    </div>
+</header>
+
+<main id="chat-window">
+    <div class="message-row bot-row">
+        <div class="avatar bot-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div class="bubble bot-bubble">
+            Hello! I'm your AI assistant. How can I help you today?
+            <div class="timestamp">12:12 PM</div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+    <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+</footer>
+
+<script>
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+
+    function getTime() {
+        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // 1. Add User Message to UI
+        addMessageToUI('user', text);
+        userInput.value = '';
+
+        // 2. Fetch from Flask Backend
+        try {
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await response.json();
+            
+            // 3. Add Bot Response to UI
+            addMessageToUI('bot', data.response);
+        } catch (err) {
+            console.error("Error:", err);
+        }
+    }
+
+    function addMessageToUI(sender, text) {
+        const row = document.createElement('div');
+        row.className = `message-row ${sender}-row`;
+        
+        const avatarClass = sender === 'bot' ? 'fa-robot' : 'fa-user';
+        const avatarType = sender === 'bot' ? 'bot-avatar' : 'user-avatar';
+        
+        row.innerHTML = `
+            <div class="avatar ${avatarType}"><i class="fa-solid ${avatarClass}"></i></div>
+            <div class="bubble ${sender}-bubble">
+                ${text}
+                <div class="timestamp">${getTime()}</div>
+            </div>
+        `;
+        
+        chatWindow.appendChild(row);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    userInput.addEventListener("keypress", (e) => { if(e.key === "Enter") sendMessage(); });
+</script>
+
+</body>
+</html> -->
+
+
+
+
+
+
+<!-- 2nd time updated code  -->
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ChatBot | Groq Powered</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafd;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header --- */
+        header {
+            background: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eef2f6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .logo-section { display: flex; align-items: center; gap: 12px; }
+        .logo-box {
+            background: #2b7fff;
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 20px;
+        }
+        .logo-text { font-weight: 600; font-size: 20px; color: #1a1c1e; }
+        
+        .theme-switch {
+            background: #f1f4f9;
+            padding: 4px;
+            border-radius: 20px;
+            display: flex;
+            gap: 4px;
+        }
+        .theme-btn { padding: 6px 10px; border-radius: 15px; cursor: pointer; font-size: 14px; color: #666; }
+        .theme-btn.active { background: #2b7fff; color: white; }
+
+        /* --- Chat Window --- */
+        #chat-window {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .highlight-name {
+            font-weight: 700;           /* Makes it bold */
+            color: #2b7fff;            /* Uses your theme's blue */
+            /*background: rgba(43, 127, 255, 0.1);*/ /* Adds a very soft blue glow behind the name */
+            padding: 2px 6px;          /* Adds a little space around the highlight */
+            border-radius: 4px;        /* Rounds the corners of the highlight */
+        }
+
+        .message-row { display: flex; width: 100%; align-items: flex-start; gap: 12px; }
+        .bot-row { justify-content: flex-start; }
+        .user-row { justify-content: flex-end; flex-direction: row-reverse; }
+
+        /* Avatars */
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 18px;
+        }
+        .bot-avatar { background: #2b7fff; color: white; }
+        .user-avatar { background: #cfd8dc; color: #546e7a; }
+
+        /* Bubbles */
+        .bubble {
+            max-width: 75%;
+            padding: 14px 20px;
+            border-radius: 16px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .bot-bubble {
+            background: white;
+            border: 1px solid #eef2f6;
+            color: #333;
+            border-top-left-radius: 2px;
+        }
+        .user-bubble {
+            background: #2b7fff;
+            color: white;
+            border-top-right-radius: 2px;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            margin-top: 8px;
+            opacity: 0.7;
+        }
+        .bot-row .timestamp { color: #999; }
+        .user-row .timestamp { color: rgba(255,255,255,0.8); text-align: right; }
+
+        /* --- Markdown Styling --- */
+        .markdown-content p { margin-bottom: 12px; }
+        .markdown-content p:last-child { margin-bottom: 0; }
+        .markdown-content ul, .markdown-content ol { margin-left: 20px; margin-bottom: 12px; }
+        .markdown-content pre { 
+            background: #1e1e1e; 
+            color: #dcdcdc; 
+            padding: 16px; 
+            border-radius: 8px; 
+            overflow-x: auto; 
+            font-family: 'Consolas', monospace;
+            margin: 12px 0;
+            border: 1px solid #333;
+        }
+        .markdown-content code { 
+            background: rgba(0,0,0,0.06); 
+            padding: 2px 5px; 
+            border-radius: 4px; 
+            font-family: monospace;
+            font-weight: 500;
+        }
+        .user-bubble .markdown-content code { background: rgba(255,255,255,0.2); color: white; }
+
+        /* --- Input Area --- */
+        footer {
+            background: white;
+            padding: 20px 40px;
+            border-top: 1px solid #eef2f6;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid #e1e8ed;
+            border-radius: 12px;
+            outline: none;
+            background: #fcfdfe;
+            font-size: 15px;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: #2b7fff; }
+        
+        .send-btn {
+            background: #2b7fff;
+            color: white;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .send-btn:hover { background: #1a6ff2; }
+        .send-btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-section">
+        <div class="logo-box"><i class="fa-regular fa-comment-dots"></i></div>
+        <div class="logo-text">AI ChatBot</div>
+    </div>
+    <div class="theme-switch">
+        <div class="theme-btn active" title="Light Mode"><i class="fa-solid fa-sun"></i></div>
+        <div class="theme-btn" title="Dark Mode"><i class="fa-solid fa-moon"></i></div>
+    </div>
+</header>
+
+<main id="chat-window">
+    <div class="message-row bot-row">
+        <div class="avatar bot-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div class="bubble bot-bubble">
+            <div class="markdown-content"> Hello! I'm your AI companion, developed by<span class="highlight-name">Bhargav S</span>. How can I assist you today?</div>
+            <div class="timestamp">Just now</div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+    <button class="send-btn" id="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+</footer>
+
+<script>
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+
+    function getTime() {
+        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // 1. Add User Message
+        addMessageToUI('user', text);
+        userInput.value = '';
+
+        // 2. Create a "Thinking..." placeholder bubble
+        const thinkingRow = document.createElement('div');
+        thinkingRow.className = 'message-row bot-row';
+        thinkingRow.innerHTML = `
+            <div class="avatar bot-avatar"><i class="fa-solid fa-robot"></i></div>
+            <div class="bubble bot-bubble">
+                <div class="markdown-content"><em>Thinking...</em></div>
+            </div>
+        `;
+        chatWindow.appendChild(thinkingRow);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        try {
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await response.json();
+        
+            // 3. Remove the "Thinking..." bubble and add the real response
+            chatWindow.removeChild(thinkingRow);
+            addMessageToUI('bot', data.response);
+        
+        } catch (err) {
+            chatWindow.removeChild(thinkingRow);
+            console.error("Error:", err);
+            addMessageToUI('bot', "⚠️ Error: Could not connect to the backend.");
+        }
+    }
+
+    // async function sendMessage() {
+    //     const text = userInput.value.trim();
+    //     if (!text) return;
+
+    //     // 1. Add User Message (Plain Text)
+    //     addMessageToUI('user', text);
+    //     userInput.value = '';
+
+    //     // 2. Add "Typing..." placeholder or handle delay
+    //     try {
+    //         const response = await fetch('/chat', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({ message: text })
+    //         });
+    //         const data = await response.json();
+            
+    //         // 3. Add Bot Response (Markdown)
+    //         addMessageToUI('bot', data.response);
+    //     } catch (err) {
+    //         console.error("Error:", err);
+    //         addMessageToUI('bot', "⚠️ Error: Could not connect to the backend.");
+    //     }
+    // }
+
+    function addMessageToUI(sender, text) {
+        const row = document.createElement('div');
+        row.className = `message-row ${sender}-row`;
+        
+        const avatarClass = sender === 'bot' ? 'fa-robot' : 'fa-user';
+        const avatarType = sender === 'bot' ? 'bot-avatar' : 'user-avatar';
+        
+        // Parse Markdown only for the bot
+        const content = sender === 'bot' ? marked.parse(text) : text;
+        
+        row.innerHTML = `
+            <div class="avatar ${avatarType}"><i class="fa-solid ${avatarClass}"></i></div>
+            <div class="bubble ${sender}-bubble">
+                <div class="markdown-content">${content}</div>
+                <div class="timestamp">${getTime()}</div>
+            </div>
+        `;
+        
+        chatWindow.appendChild(row);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    // Enter Key Support
+    userInput.addEventListener("keypress", (e) => {
+        if(e.key === "Enter") sendMessage();
+    });
+</script>
+
+</body>
+</html> -->
+
+
+
+
+
+<!-- 1st time updated code   -->
+
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ChatBot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafd;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eef2f6;
+        }
+        .logo-section { display: flex; align-items: center; gap: 12px; }
+        .logo-box {
+            background: #2b7fff;
+            color: white;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 20px;
+        }
+        .logo-text { font-weight: 600; font-size: 20px; color: #1a1c1e; }
+        .theme-switch {
+            background: #f1f4f9;
+            padding: 4px;
+            border-radius: 20px;
+            display: flex;
+            gap: 4px;
+        }
+        .theme-btn { padding: 6px 10px; border-radius: 15px; cursor: pointer; font-size: 14px; }
+        .theme-btn.active { background: #2b7fff; color: white; }
+
+        /* Chat Container */
+        #chat-window {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .message-row { display: flex; width: 100%; align-items: flex-start; gap: 12px; }
+        .bot-row { justify-content: flex-start; }
+        .user-row { justify-content: flex-end; flex-direction: row-reverse; }
+
+        /* Avatars */
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .bot-avatar { background: #2b7fff; color: white; }
+        .user-avatar { background: #cfd8dc; color: #546e7a; }
+
+        /* Bubbles */
+        .bubble {
+            max-width: 60%;
+            padding: 14px 20px;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+        .bot-bubble {
+            background: white;
+            border: 1px solid #eef2f6;
+            color: #333;
+        }
+        .user-bubble {
+            background: #2b7fff;
+            color: white;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            margin-top: 6px;
+            opacity: 0.7;
+        }
+        .bot-row .timestamp { color: #999; }
+        .user-row .timestamp { color: #fff; text-align: right; }
+
+        /* Input Area */
+        footer {
+            background: white;
+            padding: 20px 40px;
+            border-top: 1px solid #eef2f6;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid #e1e8ed;
+            border-radius: 10px;
+            outline: none;
+            background: #fcfdfe;
+            font-size: 15px;
+        }
+        .send-btn {
+            background: #90caf9;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .send-btn:hover { background: #2b7fff; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-section">
+        <div class="logo-box"><i class="fa-regular fa-comment-dots"></i></div>
+        <div class="logo-text">AI ChatBot</div>
+    </div>
+    <div class="theme-switch">
+        <div class="theme-btn active"><i class="fa-solid fa-sun"></i></div>
+        <div class="theme-btn"><i class="fa-solid fa-moon"></i></div>
+    </div>
+</header>
+
+<main id="chat-window">
+    <div class="message-row bot-row">
+        <div class="avatar bot-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div class="bubble bot-bubble">
+            Hello! I'm your AI assistant. How can I help you today?
+            <div class="timestamp">12:12 PM</div>
+        </div>
+    </div>
+</main>
+
+<footer>
+    <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+    <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+</footer>
+
+<script>
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+
+    function getTime() {
+        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // 1. Add User Message to UI
+        addMessageToUI('user', text);
+        userInput.value = '';
+
+        // 2. Fetch from Flask Backend
+        try {
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await response.json();
+            
+            // 3. Add Bot Response to UI
+            addMessageToUI('bot', data.response);
+        } catch (err) {
+            console.error("Error:", err);
+        }
+    }
+
+    function addMessageToUI(sender, text) {
+        const row = document.createElement('div');
+        row.className = `message-row ${sender}-row`;
+        
+        const avatarClass = sender === 'bot' ? 'fa-robot' : 'fa-user';
+        const avatarType = sender === 'bot' ? 'bot-avatar' : 'user-avatar';
+        
+        row.innerHTML = `
+            <div class="avatar ${avatarType}"><i class="fa-solid ${avatarClass}"></i></div>
+            <div class="bubble ${sender}-bubble">
+                ${text}
+                <div class="timestamp">${getTime()}</div>
+            </div>
+        `;
+        
+        chatWindow.appendChild(row);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    userInput.addEventListener("keypress", (e) => { if(e.key === "Enter") sendMessage(); });
+</script>
+
+</body>
+</html> -->
